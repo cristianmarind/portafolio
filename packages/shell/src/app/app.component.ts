@@ -6,7 +6,7 @@ import { SideNavComponent, NavSection } from './components/side-nav/side-nav.com
 import { MfeWrapperComponent } from './components/mfe-wrapper/mfe-wrapper.component';
 import { AboutComponent } from './sections/about/about.component';
 import { LeadershipComponent } from './sections/leadership/leadership.component';
-import { eventBus, Events } from '@portfolio/shared/eventBus';
+import { eventBus, Events } from '@portfolio/shared';
 
 @Component({
   selector: 'app-root',

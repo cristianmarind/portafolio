@@ -19,8 +19,7 @@
     "useDefineForClassFields": false,
     "lib": ["ES2022", "dom"],
     "paths": {
-      "@portfolio/shared": ["../shared/src/index.ts"],
-      "@portfolio/shared/*": ["../shared/src/*"]
+      "@portfolio/shared": ["../shared/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

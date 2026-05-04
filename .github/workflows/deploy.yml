@@ -31,7 +31,7 @@ jobs:
 
       - name: Build shell
         working-directory: packages/shell
-        run: npx ng build --configuration production
+        run: npx ng run shell:esbuild:production
 
       - name: Build mfe-hero
         working-directory: packages/mfe-hero
