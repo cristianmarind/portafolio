@@ -1,0 +1,26 @@
+{
+  "name": "@portfolio/mfe-achievements",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "webpack serve --config webpack.config.js --mode development",
+    "build": "webpack --config webpack.config.js --mode production",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@portfolio/shared": "*",
+    "css-loader": "^7.1.4",
+    "style-loader": "^4.0.0",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vue/compiler-sfc": "^3.4.0",
+    "html-webpack-plugin": "^5.6.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "~5.4.2",
+    "vue-loader": "^17.4.2",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  }
+}
