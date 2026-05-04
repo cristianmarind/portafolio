@@ -4,7 +4,7 @@
  * Run after `turbo build`. Each MFE builds to packages/{name}/dist/,
  * this script copies them to dist/mfe-{name}/ and the shell to dist/.
  */
-import { cpSync, mkdirSync, rmSync, existsSync } from 'fs';
+import { cpSync, mkdirSync, rmSync, existsSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -45,4 +45,15 @@ for (const mfe of mfes) {
   }
 }
 
+// Write robots.txt and sitemap.xml
+const base = 'https://cristianmarind.github.io/portafolio';
+writeFileSync(join(outDir, 'robots.txt'),
+  `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
+
+writeFileSync(join(outDir, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${base}/</loc><changefreq>monthly</changefreq><priority>1.0</priority></url>
+</urlset>\n`);
+
+console.log('✓ robots.txt + sitemap.xml written');
 console.log('\n✅ dist/ assembled successfully');
