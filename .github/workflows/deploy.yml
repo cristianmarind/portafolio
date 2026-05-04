@@ -37,6 +37,10 @@ jobs:
         working-directory: packages/mfe-hero
         run: npm run build
 
+      - name: Build mfe-experience
+        working-directory: packages/mfe-experience
+        run: npm run build
+
       - name: Merge dist
         run: node scripts/merge-dist.mjs
 
