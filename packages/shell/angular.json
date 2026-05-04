@@ -60,15 +60,6 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-architects/native-federation:build",
-          "options": {
-            "target": "shell:serve-original:development",
-            "rebuildDelay": 0,
-            "dev": true,
-            "port": 0
-          }
-        },
-        "serve-original": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
@@ -88,5 +79,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "984a12c7-60e4-4e3b-af74-ae9441017bf1"
   }
 }

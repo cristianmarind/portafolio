@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 const isProd = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
@@ -16,7 +16,6 @@ async function loadWebpackRemote(remoteName: string, exposedModule: string): Pro
   const config = REMOTE_ENTRIES[remoteName];
   if (!config) throw new Error(`Unknown remote: ${remoteName}`);
 
-  // Load remoteEntry.js if not already loaded
   if (!(window as any)[config.scope]) {
     await new Promise<void>((resolve, reject) => {
       const existing = document.querySelector(`script[data-remote="${remoteName}"]`);
@@ -47,7 +46,7 @@ async function loadWebpackRemote(remoteName: string, exposedModule: string): Pro
       <div #host></div>
     </div>
     <div class="mfe-error" *ngIf="error">
-      <p>{{ remote }} failed to load</p>
+      <p>{{ remote }} unavailable</p>
     </div>
   `,
   styles: [`
@@ -66,8 +65,8 @@ async function loadWebpackRemote(remoteName: string, exposedModule: string): Pro
     @keyframes spin { to { transform: rotate(360deg); } }
     .mfe-error {
       display: flex; align-items: center; justify-content: center;
-      min-height: 200px; color: #7BA7BC;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+      min-height: 100px; color: #1E3448;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
     }
   `]
 })
@@ -79,27 +78,35 @@ export class MfeWrapperComponent implements OnInit, OnDestroy, AfterViewInit {
   loading = true;
   error = false;
   private unmount?: () => void;
-  private pendingMount?: { mod: any };
+  private loadedMod?: any;
+  private viewReady = false;
+
+  constructor(private cdr: ChangeDetectorRef) {}
 
   async ngOnInit() {
     try {
-      const mod = await loadWebpackRemote(this.remote, this.module);
-      this.pendingMount = { mod };
-    } catch (e) {
-      console.error(`Failed to load remote ${this.remote}:`, e);
-      this.error = true;
-    } finally {
+      this.loadedMod = await loadWebpackRemote(this.remote, this.module);
       this.loading = false;
+      this.cdr.detectChanges();
+      // If view already ready (AfterViewInit already ran), mount now
+      if (this.viewReady) this.tryMount();
+    } catch (e) {
+      console.warn(`MFE ${this.remote} unavailable (is the dev server running?)`);
+      this.error = true;
+      this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 
   ngAfterViewInit() {
-    if (this.pendingMount && this.hostEl?.nativeElement) {
-      const { mod } = this.pendingMount;
-      if (typeof mod?.mount === 'function') {
-        this.unmount = mod.mount(this.hostEl.nativeElement);
-      }
-      this.pendingMount = undefined;
+    this.viewReady = true;
+    // If module already loaded, mount now
+    if (this.loadedMod) this.tryMount();
+  }
+
+  private tryMount() {
+    if (this.hostEl?.nativeElement && typeof this.loadedMod?.mount === 'function') {
+      this.unmount = this.loadedMod.mount(this.hostEl.nativeElement);
     }
   }
 
