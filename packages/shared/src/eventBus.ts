@@ -17,6 +17,7 @@ export const eventBus = new PortfolioEventBus();
 export const Events = {
   GAME_SECTION_REACHED: 'game:section-reached',
   GAME_MODE_TOGGLE:     'game:mode-toggle',
+  GAME_EXIT:            'game:exit',
   MFE_MOUNTED:          'mfe:mounted',
   BOOT_PROGRESS:        'boot:progress',
   BOOT_COMPLETE:        'boot:complete',

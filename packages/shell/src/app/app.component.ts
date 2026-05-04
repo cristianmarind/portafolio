@@ -105,6 +105,10 @@ export class AppComponent implements OnInit {
         }, 300);
       }
     });
+
+    eventBus.on(Events.GAME_EXIT, () => {
+      this.gameModeActive = false;
+    });
   }
 
   onBootComplete() {

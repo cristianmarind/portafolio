@@ -49,6 +49,14 @@ jobs:
         working-directory: packages/mfe-achievements
         run: npm run build
 
+      - name: Build mfe-game
+        working-directory: packages/mfe-game
+        run: npm run build
+
+      - name: Build mfe-contact
+        working-directory: packages/mfe-contact
+        run: npm run build
+
       - name: Merge dist
         run: node scripts/merge-dist.mjs
 
