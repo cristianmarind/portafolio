@@ -68,8 +68,22 @@ const deaths = ref(0);
 const showFlash = ref(false);
 const flashType = ref<'red' | 'green'>('red');
 const reachedSection = ref<string | null>(null);
-const modalCooldown = ref(false);
+const visitedSection = ref<string | null>(null); // tracks which safe zone player is currently inside
 const isMobile = ref(false);
+
+// Click-to-move (plain vars — read every frame, no need for reactivity)
+let mouseDown = false;
+let mouseCanvasX = 0;
+let mouseCanvasY = 0;
+
+function onCanvasMouseMove(e: MouseEvent) {
+  if (!canvasRef.value) return;
+  const rect = canvasRef.value.getBoundingClientRect();
+  mouseCanvasX = e.clientX - rect.left;
+  mouseCanvasY = e.clientY - rect.top;
+}
+function onCanvasMouseDown(e: MouseEvent) { if (e.button === 0) mouseDown = true; }
+function onCanvasMouseUp() { mouseDown = false; }
 
 /* ── Player state ───────────────────────────────────── */
 const PLAYER_SIZE = 18;
@@ -152,6 +166,14 @@ function updatePlayer() {
     if (len > 1) { ax /= len; ay /= len; }
   }
 
+  // Click-to-move: held mouse button drives direction toward cursor (overrides keyboard/joystick)
+  if (mouseDown) {
+    const dx = mouseCanvasX + camera.x - player.x;
+    const dy = mouseCanvasY + camera.y - player.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > 8) { ax = dx / dist; ay = dy / dist; }
+  }
+
   player.vx = ax * PLAYER_SPEED;
   player.vy = ay * PLAYER_SPEED;
 
@@ -193,15 +215,19 @@ function checkCollisions(ts: number) {
   const px = player.x, py = player.y;
   const half = PLAYER_SIZE / 2;
 
-  // Safe zone check
+  // Safe zone check — also tracks entry for modal trigger
+  let inSafeZone = false;
   for (const zone of gameMap.zones) {
     for (const sz of zone.safeZones) {
       if (px + half > sz.x && px - half < sz.x + sz.width &&
           py + half > sz.y && py - half < sz.y + sz.height) {
+        inSafeZone = true;
         lastSafeX.value = sz.x + sz.width / 2;
         lastSafeY.value = sz.y + sz.height / 2;
 
-        if (!reachedSection.value && !modalCooldown.value) {
+        // Modal fires once per entry (resets when player leaves the zone)
+        if (sz.targetSection !== visitedSection.value && !reachedSection.value) {
+          visitedSection.value = sz.targetSection;
           reachedSection.value = sz.targetSection;
           keys.clear();
           flashType.value = 'green';
@@ -212,7 +238,10 @@ function checkCollisions(ts: number) {
     }
   }
 
-  // Coin collection
+  // Reset visited tracking when player fully exits all safe zones
+  if (!inSafeZone) visitedSection.value = null;
+
+  // Coin collection (always active)
   for (const coin of coins) {
     if (coin.collected) continue;
     const dx = px - coin.x, dy = py - coin.y;
@@ -221,7 +250,8 @@ function checkCollisions(ts: number) {
     }
   }
 
-  // Enemy collision
+  // Enemy collision blocked while inside a safe zone
+  if (inSafeZone) return;
   for (const e of enemies) {
     const dx = px - e.x, dy = py - e.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -384,6 +414,23 @@ function render(canvas: HTMLCanvasElement, ts: number) {
 
   ctx.restore();
 
+  // Click-to-move target indicator (screen space)
+  if (mouseDown) {
+    ctx.save();
+    ctx.strokeStyle = '#00D9C055';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(mouseCanvasX, mouseCanvasY, 9, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mouseCanvasX - 5, mouseCanvasY);
+    ctx.lineTo(mouseCanvasX + 5, mouseCanvasY);
+    ctx.moveTo(mouseCanvasX, mouseCanvasY - 5);
+    ctx.lineTo(mouseCanvasX, mouseCanvasY + 5);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   // Mini-map (top right)
   drawMiniMap(ctx, W, H);
 }
@@ -437,8 +484,6 @@ function cancelNavigation() { dismissModal(); }
 
 function dismissModal() {
   reachedSection.value = null;
-  modalCooldown.value = true;
-  setTimeout(() => { modalCooldown.value = false; }, 3000);
   nextTick(() => overlayRef.value?.focus());
 }
 
@@ -466,12 +511,24 @@ onMounted(async () => {
   overlayRef.value?.focus();
   resize();
   window.addEventListener('resize', resize);
+
+  const canvas = canvasRef.value!;
+  canvas.addEventListener('mousemove', onCanvasMouseMove);
+  canvas.addEventListener('mousedown', onCanvasMouseDown);
+  window.addEventListener('mouseup', onCanvasMouseUp);
+
   rafId = requestAnimationFrame(loop);
 });
 
 onUnmounted(() => {
   cancelAnimationFrame(rafId);
   window.removeEventListener('resize', resize);
+  window.removeEventListener('mouseup', onCanvasMouseUp);
+  const canvas = canvasRef.value;
+  if (canvas) {
+    canvas.removeEventListener('mousemove', onCanvasMouseMove);
+    canvas.removeEventListener('mousedown', onCanvasMouseDown);
+  }
 });
 </script>
 

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BootSequenceComponent } from './components/boot-sequence/boot-sequence.component';
 import { CustomCursorComponent } from './components/custom-cursor/custom-cursor.component';
@@ -85,6 +85,8 @@ export class AppComponent implements OnInit {
   booting = true;
   gameModeActive = false;
 
+  constructor(private ngZone: NgZone) {}
+
   navSections: NavSection[] = [
     { id: 'hero',         label: 'Hero'         },
     { id: 'about',        label: 'About'        },
@@ -99,15 +101,17 @@ export class AppComponent implements OnInit {
     eventBus.on(Events.GAME_SECTION_REACHED, (e: CustomEvent) => {
       const section = e.detail?.['section'] as string;
       if (section) {
-        this.gameModeActive = false;
-        setTimeout(() => {
-          document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
-        }, 300);
+        this.ngZone.run(() => {
+          this.gameModeActive = false;
+          setTimeout(() => {
+            document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+          }, 300);
+        });
       }
     });
 
     eventBus.on(Events.GAME_EXIT, () => {
-      this.gameModeActive = false;
+      this.ngZone.run(() => { this.gameModeActive = false; });
     });
   }
 
