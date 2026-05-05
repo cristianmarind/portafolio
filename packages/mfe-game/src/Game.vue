@@ -331,8 +331,8 @@ function render(canvas: HTMLCanvasElement, ts: number) {
     ctx.strokeRect(zone.x, zone.y, zone.width, zone.height);
 
     // Zone label
-    ctx.fillStyle = '#1E3448';
-    ctx.font = '500 10px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#F5A623';
+    ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText(zone.label, zone.x + zone.width / 2, zone.y + 14);
 
