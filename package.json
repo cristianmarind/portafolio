@@ -4,8 +4,9 @@
   "workspaces": [
     "packages/*"
   ],
+  "packageManager": "npm@8.19.2",
   "scripts": {
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "clean": "turbo run clean",
     "merge": "node scripts/merge-dist.mjs",
