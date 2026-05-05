@@ -16,15 +16,23 @@ export function Timeline() {
     const track = trackRef.current;
     if (!wrap || !track) return;
 
-    const cards = gsap.utils.toArray<HTMLElement>('.exp-card', track);
-    const totalScroll = track.scrollWidth - wrap.offsetWidth;
+    // Center first card at t=0
+    const firstCard = track.querySelector<HTMLElement>('.exp-card');
+    const leadPad = firstCard
+      ? Math.max(0, (wrap.offsetWidth - firstCard.offsetWidth) / 2)
+      : wrap.offsetWidth * 0.08;
+    track.style.paddingLeft = `${leadPad}px`;
+    track.style.paddingRight = `${leadPad}px`;
 
-    // Pin the section and drive horizontal scroll
+    const cards = gsap.utils.toArray<HTMLElement>('.exp-card', track);
+    const calcTotal = () => track.scrollWidth - wrap.offsetWidth;
+
+    // Anchor at t=1 so positions map 1:1 with scroll progress
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: wrap,
         start: 'top top',
-        end: () => `+=${totalScroll + window.innerHeight}`,
+        end: () => `+=${calcTotal() + window.innerHeight}`,
         pin: true,
         scrub: 1,
         anticipatePin: 1,
@@ -32,32 +40,79 @@ export function Timeline() {
       },
     });
 
-    tl.to(track, { x: -totalScroll, ease: 'none' });
-
-    // Animate SVG line width as scroll progresses
+    tl.set({}, {}, 1);
+    tl.to(track, { x: () => -calcTotal(), duration: 1, ease: 'none' }, 0);
     if (lineRef.current) {
-      tl.to(lineRef.current, { attr: { x2: '100%' }, ease: 'none' }, 0);
+      tl.to(lineRef.current, { attr: { x2: '100%' }, duration: 1, ease: 'none' }, 0);
     }
 
-    // Fade-in each card as it enters viewport (within horizontal scroll)
-    cards.forEach((card, i) => {
-      tl.fromTo(
-        card,
-        { opacity: 0, y: 32 },
-        { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' },
-        i * 0.12
-      );
+    // Viewport-synced card fade in/out
+    const totalScroll = calcTotal();
+    const fadeDur = 0.06;
+
+    cards.forEach((card) => {
+      const cardLeft = card.offsetLeft;
+      const cardW = card.offsetWidth;
+      // when card's right edge first enters viewport from the right
+      const rawEnter = (cardLeft + cardW - wrap.offsetWidth) / totalScroll;
+      // when card's left edge exits viewport to the left
+      const exitAt = cardLeft / totalScroll;
+
+      if (rawEnter > fadeDur) {
+        gsap.set(card, { opacity: 0, y: 24 });
+        tl.to(card, { opacity: 1, y: 0, duration: fadeDur, ease: 'power2.out' }, rawEnter - fadeDur);
+      } else {
+        gsap.set(card, { opacity: 1, y: 0 });
+      }
+
+      if (exitAt > fadeDur && exitAt < 1 - fadeDur) {
+        tl.to(card, { opacity: 0, y: -12, duration: fadeDur, ease: 'power1.in' }, exitAt);
+      }
     });
 
-    return () => { ScrollTrigger.getAll().forEach(st => st.kill()); };
+    // Mouse drag: horizontal drag → vertical scroll to drive pinned section
+    let dragging = false;
+    let startX = 0;
+    let startScrollY = 0;
+
+    const onDown = (e: MouseEvent) => {
+      dragging = true;
+      startX = e.clientX;
+      startScrollY = window.scrollY;
+      wrap.style.cursor = 'grabbing';
+      e.preventDefault();
+    };
+
+    const onMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      const total = calcTotal();
+      const dx = startX - e.clientX;
+      window.scrollTo(0, startScrollY + dx * ((total + window.innerHeight) / total));
+    };
+
+    const onUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      wrap.style.cursor = 'grab';
+    };
+
+    wrap.addEventListener('mousedown', onDown);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+
+    return () => {
+      ScrollTrigger.getAll().forEach(st => st.kill());
+      wrap.removeEventListener('mousedown', onDown);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
   }, []);
 
   return (
     <div
       ref={wrapRef}
-      style={{ position: 'relative', overflow: 'hidden', height: '100vh' }}
+      style={{ position: 'relative', overflow: 'hidden', height: '100vh', cursor: 'grab' }}
     >
-      {/* Timeline SVG line */}
       <svg
         style={{
           position: 'absolute',
@@ -79,14 +134,14 @@ export function Timeline() {
         <line x1="0" y1="1" x2="100%" y2="1" stroke="#0D1F2D" strokeWidth="2" />
       </svg>
 
-      {/* Horizontal track */}
       <div
         ref={trackRef}
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '2rem',
-          padding: '2rem 8vw',
+          paddingTop: '2rem',
+          paddingBottom: '2rem',
           height: '100%',
           willChange: 'transform',
         }}
@@ -95,7 +150,6 @@ export function Timeline() {
           <ExperienceCard key={exp.id} experience={exp} index={i} />
         ))}
 
-        {/* End cap */}
         <div style={{
           flexShrink: 0, width: '240px', display: 'flex',
           flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem',
@@ -119,7 +173,6 @@ export function Timeline() {
         </div>
       </div>
 
-      {/* Scroll hint */}
       <div style={{
         position: 'absolute', bottom: '2rem', left: '50%',
         transform: 'translateX(-50%)',

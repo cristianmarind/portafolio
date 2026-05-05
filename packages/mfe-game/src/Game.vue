@@ -15,12 +15,18 @@
     <!-- Canvas -->
     <canvas ref="canvasRef" class="game-canvas" />
 
-    <!-- Section reached popup -->
+    <!-- Section reached modal -->
     <Transition name="popup">
-      <div v-if="reachedSection" class="section-popup">
-        <div class="popup-icon">✓</div>
-        <div class="popup-text">{{ reachedSection.toUpperCase() }} REACHED!</div>
-        <div class="popup-sub">Navigating to section…</div>
+      <div v-if="reachedSection" class="section-modal-backdrop" @click.self="cancelNavigation">
+        <div class="section-modal">
+          <div class="modal-icon">✓</div>
+          <div class="modal-title">{{ reachedSection.toUpperCase() }} REACHED!</div>
+          <div class="modal-question">Open this section in a new tab?</div>
+          <div class="modal-actions">
+            <button class="modal-btn confirm" @click="confirmNavigation">YES — GO</button>
+            <button class="modal-btn cancel" @click="cancelNavigation">NO — STAY</button>
+          </div>
+        </div>
       </div>
     </Transition>
 
@@ -62,6 +68,7 @@ const deaths = ref(0);
 const showFlash = ref(false);
 const flashType = ref<'red' | 'green'>('red');
 const reachedSection = ref<string | null>(null);
+const modalCooldown = ref(false);
 const isMobile = ref(false);
 
 /* ── Player state ───────────────────────────────────── */
@@ -127,7 +134,7 @@ let t = 0;
 let dying = false;
 
 function updatePlayer() {
-  if (dying || invincible.value) return;
+  if (dying || invincible.value || reachedSection.value) return;
 
   let ax = 0, ay = 0;
 
@@ -194,16 +201,12 @@ function checkCollisions(ts: number) {
         lastSafeX.value = sz.x + sz.width / 2;
         lastSafeY.value = sz.y + sz.height / 2;
 
-        // Trigger section navigation (once per 2s)
-        if (!reachedSection.value) {
+        if (!reachedSection.value && !modalCooldown.value) {
           reachedSection.value = sz.targetSection;
+          keys.clear();
           flashType.value = 'green';
           showFlash.value = true;
           setTimeout(() => { showFlash.value = false; }, 400);
-          setTimeout(() => {
-            eventBus.emit('game:section-reached', { section: sz.targetSection });
-            reachedSection.value = null;
-          }, 1800);
         }
       }
     }
@@ -422,8 +425,26 @@ function loop(ts: number) {
   rafId = requestAnimationFrame(loop);
 }
 
+/* ── Modal navigation ───────────────────────────────── */
+function confirmNavigation() {
+  if (!reachedSection.value) return;
+  const url = window.location.origin + window.location.pathname + '#' + reachedSection.value;
+  window.open(url, '_blank', 'noopener,noreferrer');
+  dismissModal();
+}
+
+function cancelNavigation() { dismissModal(); }
+
+function dismissModal() {
+  reachedSection.value = null;
+  modalCooldown.value = true;
+  setTimeout(() => { modalCooldown.value = false; }, 3000);
+  nextTick(() => overlayRef.value?.focus());
+}
+
 /* ── Keyboard ───────────────────────────────────────── */
 function onKey(e: KeyboardEvent) {
+  if (reachedSection.value) return;
   keys.add(e.key);
   e.preventDefault();
 }
@@ -532,43 +553,81 @@ onUnmounted(() => {
 .flash-enter-active, .flash-leave-active { transition: opacity 0.15s; }
 .flash-enter-from, .flash-leave-to { opacity: 0; }
 
-.section-popup {
+.section-modal-backdrop {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  background: #060E14BB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.section-modal {
   background: #0D1F2D;
   border: 2px solid #00FF66;
   border-radius: 12px;
-  padding: 1.5rem 2rem;
+  padding: 2rem 2.5rem;
   text-align: center;
-  z-index: 10;
-  box-shadow: 0 0 40px #00FF6644;
+  box-shadow: 0 0 60px #00FF6644;
+  min-width: 280px;
 }
 
-.popup-icon {
+.modal-icon {
   font-size: 2.5rem;
   color: #00FF66;
   margin-bottom: 0.5rem;
 }
 
-.popup-text {
+.modal-title {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1rem;
   font-weight: 700;
   color: #E8F4F8;
   letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
 }
 
-.popup-sub {
+.modal-question {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: #7BA7BC;
+  margin-bottom: 1.25rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.modal-btn {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.65rem;
-  color: #7BA7BC;
-  margin-top: 0.35rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
 }
 
-.popup-enter-active, .popup-leave-active { transition: all 0.3s ease; }
-.popup-enter-from, .popup-leave-to { opacity: 0; transform: translate(-50%, -40%); }
+.modal-btn.confirm {
+  border-color: #00D9C0;
+  color: #00D9C0;
+}
+.modal-btn.confirm:hover { background: #00D9C018; }
+
+.modal-btn.cancel {
+  border-color: #FF6B9D;
+  color: #FF6B9D;
+}
+.modal-btn.cancel:hover { background: #FF6B9D18; }
+
+.popup-enter-active, .popup-leave-active { transition: all 0.25s ease; }
+.popup-enter-from, .popup-leave-to { opacity: 0; transform: scale(0.95); }
 
 .joystick-area {
   position: absolute;

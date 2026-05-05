@@ -113,6 +113,12 @@ export class AppComponent implements OnInit {
 
   onBootComplete() {
     this.booting = false;
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      setTimeout(() => {
+        document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      }, 400);
+    }
   }
 
   toggleGameMode() {

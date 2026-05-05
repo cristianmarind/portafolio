@@ -22,7 +22,7 @@
           <span class="card-icon">in</span>
           <div>
             <div class="card-label">LinkedIn</div>
-            <div class="card-value">jumarinr</div>
+            <div class="card-value">cristian-marin-durango</div>
           </div>
         </a>
         <div class="contact-card" style="--c: #F5A623; cursor: default">
@@ -155,7 +155,7 @@ const COMMANDS: Record<string, () => string | string[]> = {
   contact: () => [
     '<span style="color:#F5A623">Get in touch:</span>',
     `  ✉  <a href="mailto:${profile.email}" style="color:#00D9C0">${profile.email}</a>`,
-    `  in <a href="${profile.linkedIn}" target="_blank" style="color:#0099FF">linkedin.com/in/jumarinr</a>`,
+    `  in <a href="${profile.linkedIn}" target="_blank" style="color:#0099FF">linkedin.com/in/cristian-marin-durango-347527142/</a>`,
     `  📍 ${profile.location} · Open to remote worldwide`,
   ],
   'hire me': () => {

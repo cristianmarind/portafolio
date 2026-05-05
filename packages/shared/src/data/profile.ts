@@ -6,7 +6,7 @@ export const profile: Profile = {
   tagline: 'I make things happen.',
   email: 'camd1996@gmail.com',
   phone: '3016556270',
-  linkedIn: 'https://www.linkedin.com/in/jumarinr/',
+  linkedIn: 'https://www.linkedin.com/in/cristian-marin-durango-347527142/',
   location: 'Colombia',
   about:
     'A responsible and adaptable professional with a strong eagerness to learn. I enjoy teamwork, maintain a positive attitude, and have solid leadership and advisory skills.',
