@@ -122,6 +122,9 @@ export class AppComponent implements OnInit {
       setTimeout(() => {
         document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
       }, 400);
+    } else {
+      this.gameModeActive = true;
+      eventBus.emit(Events.GAME_MODE_TOGGLE, { active: true });
     }
   }
 
