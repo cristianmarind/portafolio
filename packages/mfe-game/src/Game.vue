@@ -85,6 +85,26 @@ function onCanvasMouseMove(e: MouseEvent) {
 function onCanvasMouseDown(e: MouseEvent) { if (e.button === 0) mouseDown = true; }
 function onCanvasMouseUp() { mouseDown = false; }
 
+// Touch equivalents for mobile click-to-move
+function onCanvasTouchStart(e: TouchEvent) {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (!t || !canvasRef.value) return;
+  const rect = canvasRef.value.getBoundingClientRect();
+  mouseCanvasX = t.clientX - rect.left;
+  mouseCanvasY = t.clientY - rect.top;
+  mouseDown = true;
+}
+function onCanvasTouchMove(e: TouchEvent) {
+  e.preventDefault();
+  const t = e.touches[0];
+  if (!t || !canvasRef.value) return;
+  const rect = canvasRef.value.getBoundingClientRect();
+  mouseCanvasX = t.clientX - rect.left;
+  mouseCanvasY = t.clientY - rect.top;
+}
+function onCanvasTouchEnd() { mouseDown = false; }
+
 /* ── Player state ───────────────────────────────────── */
 const PLAYER_SIZE = 18;
 const PLAYER_SPEED = 3.2;
@@ -516,6 +536,11 @@ onMounted(async () => {
   canvas.addEventListener('mousemove', onCanvasMouseMove);
   canvas.addEventListener('mousedown', onCanvasMouseDown);
   window.addEventListener('mouseup', onCanvasMouseUp);
+  // Touch equivalents (passive:false so preventDefault works to block page scroll)
+  canvas.addEventListener('touchstart', onCanvasTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onCanvasTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onCanvasTouchEnd);
+  canvas.addEventListener('touchcancel', onCanvasTouchEnd);
 
   rafId = requestAnimationFrame(loop);
 });
@@ -528,6 +553,10 @@ onUnmounted(() => {
   if (canvas) {
     canvas.removeEventListener('mousemove', onCanvasMouseMove);
     canvas.removeEventListener('mousedown', onCanvasMouseDown);
+    canvas.removeEventListener('touchstart', onCanvasTouchStart);
+    canvas.removeEventListener('touchmove', onCanvasTouchMove);
+    canvas.removeEventListener('touchend', onCanvasTouchEnd);
+    canvas.removeEventListener('touchcancel', onCanvasTouchEnd);
   }
 });
 </script>
